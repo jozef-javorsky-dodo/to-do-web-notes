@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="The definitive To-Do List SPA. A masterclass in design and engineering with Vue.js and Tailwind CSS, offering a flawless, intuitive, and powerful user experience."
+    />
+    <meta
+      name="author"
+      content="jozef.javorsky.dodo@gmail.com, github.com/jozef-javorsky-dodo"
+    />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' https://unpkg.com 'unsafe-eval' 'sha256-fjj5R3twtx/oSshf+C7j6pmEswvLAQDsreAiILzHI9o='; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; font-src 'self'; img-src 'self' data:;"
+    />
+
+    <title>📝 To-Do-List 📒</title>
+
+    <link
+      rel="icon"
+      type="image/x-icon"
+      sizes="16x16"
+      href="data:image/x-icon;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAAEnQAABJ0Ad5mH3gAAABrSURBVDhPpYxbDoAwCAR77p7bf5RYwkNWVzWZWGYXxvHJT4bMbUJqHhaNs2Cie8d/zBdp6ArJNUe8qDwdsDk4DxTmQHEwYB0MWAcD1sGAdTBgHQyg0/nzgbKseFG5O9AsK7nYlZBfXMQLhuyxG3FwsJyPIAAAAABJRU5ErkJggg=="
+      id="html-head-link-favicon"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css"
+      integrity="sha512-wnea99uKIC3TJF7v4eKk4Y+lMz2Mklv18+r4na2Gn1abDRPPOeef95xTzdwGD9e6zXJBteMIhZ1+68QC5byJZw=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+    <style>
+      :root {
+        --background: 222 47% 11%;
+        --foreground: 210 40% 98%;
+        --card: 222 47% 14%;
+        --border: 217 33% 27%;
+        --input: 217 33% 27%;
+        --ring: 217 49% 52%;
+      }
+      html.light {
+        --background: 0 0% 96%;
+        --foreground: 222 47% 11%;
+        --card: 0 0% 100%;
+        --border: 214 32% 91%;
+        --input: 214 32% 91%;
+        --ring: 222 47% 11%;
+      }
+      body {
+        background-color: hsl(var(--background));
+        color: hsl(var(--foreground));
+        transition: background-color 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+          color 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .strikethrough {
+        text-decoration: line-through;
+        color: hsl(var(--foreground) / 0.4);
+      }
+      .active-filter {
+        border-color: hsl(var(--ring));
+        background-color: hsl(var(--ring) / 0.1);
+      }
+      .list-move,
+      .list-enter-active,
+      .list-leave-active {
+        transition: all 0.5s cubic-bezier(0.55, 0, 0.1, 1);
+      }
+      .list-enter-from,
+      .list-leave-to {
+        opacity: 0;
+        transform: scale(0.95) translateY(-20px);
+      }
+      .list-leave-active {
+        position: absolute;
+      }
+      .visually-hidden {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        margin: -1px;
+        padding: 0;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        border: 0;
+      }
+    </style>
+  </head>
+  <body
+    class="flex flex-col items-center justify-start min-h-full p-4 sm:p-6 font-sans antialiased"
+  >
+    <div id="app" class="w-full max-w-xl mx-auto flex-grow flex flex-col">
+      <header role="banner" class="flex justify-between items-center mb-6">
+        <div class="w-12"></div>
+        <h1
+          class="text-5xl font-extralight text-center tracking-widest flex-grow"
+          style="color: hsl(var(--foreground) / 0.3)"
+        >
+          todos
+        </h1>
+        <button
+          @click="toggleTheme"
+          :aria-label="'Switch to ' + (theme === 'dark' ? 'light' : 'dark') + ' mode'"
+          class="w-12 h-12 flex items-center justify-center rounded-full hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-offset-2 transition-all duration-300"
+          :style="{ 'color': 'hsl(var(--foreground) / 0.5)', 'background-color': 'transparent', '--ring-offset-color': 'hsl(var(--background))', '--ring-color': 'hsl(var(--ring))' }"
+        >
+          <svg
+            v-if="theme === 'dark'"
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-6 w-6"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
+            />
+          </svg>
+          <svg
+            v-else
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-6 w-6"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
+            />
+          </svg>
+        </button>
+      </header>
+
+      <main
+        role="main"
+        class="bg-card rounded-lg shadow-2xl flex-grow flex flex-col"
+        :style="{ 'background-color': 'hsl(var(--card))' }"
+      >
+        <form
+          @submit.prevent="addTask"
+          class="flex items-center border-b p-2"
+          :style="{ 'border-color': 'hsl(var(--border))' }"
+        >
+          <input
+            type="text"
+            v-model.trim="newTask"
+            :placeholder="inputPlaceholder"
+            aria-label="New task input"
+            class="flex-grow p-3 bg-transparent focus:outline-none text-lg w-full"
+            ref="newTaskInput"
+            :style="{ 'color': 'hsl(var(--foreground))' }"
+          />
+          <button
+            type="submit"
+            aria-label="Add new task"
+            class="font-semibold py-2 px-5 rounded-md focus:outline-none focus:ring-2 focus:ring-opacity-50 transition-all duration-300"
+            :class="newTask ? 'opacity-100 hover:bg-opacity-90' : 'opacity-50 cursor-not-allowed'"
+            :disabled="!newTask"
+            :style="{ 'background-color': 'hsl(var(--ring))', 'color': 'hsl(var(--background))', '--ring-color': 'hsl(var(--ring))' }"
+          >
+            Add
+          </button>
+        </form>
+
+        <div aria-live="polite" class="visually-hidden">
+          {{ liveRegionMessage }}
+        </div>
+
+        <div class="relative flex-grow">
+          <transition-group
+            name="list"
+            tag="ul"
+            class="absolute inset-0 overflow-y-auto"
+          >
+            <li
+              v-for="task in filteredTasks"
+              :key="task.id"
+              class="flex items-center p-4 border-b group"
+              @dblclick="editTask(task)"
+              :style="{ 'border-color': 'hsl(var(--border))' }"
+            >
+              <input
+                type="checkbox"
+                v-model="task.completed"
+                :id="'task-' + task.id"
+                class="h-6 w-6 rounded-full border-2 text-blue-600 focus:ring-blue-500 cursor-pointer flex-shrink-0 appearance-none transition-all"
+                :style="{ 'border-color': 'hsl(var(--border))', 'background-color': task.completed ? 'hsl(var(--ring))' : 'transparent' }"
+              />
+              <div class="ml-4 flex-grow min-w-0">
+                <label
+                  v-if="task !== editingTask"
+                  :for="'task-' + task.id"
+                  :class="{ 'strikethrough': task.completed }"
+                  class="text-lg cursor-pointer transition-colors break-words"
+                  :style="{ 'color': 'hsl(var(--foreground))' }"
+                  >{{ task.text }}</label
+                >
+                <input
+                  v-else
+                  type="text"
+                  v-model="task.text"
+                  @blur="doneEdit(task)"
+                  @keyup.enter="doneEdit(task)"
+                  @keyup.escape="cancelEdit(task)"
+                  :aria-label="'Editing task ' + task.text"
+                  class="text-lg bg-transparent border-b-2 w-full focus:outline-none"
+                  v-focus
+                  :style="{ 'border-color': 'hsl(var(--ring))', 'color': 'hsl(var(--foreground))' }"
+                />
+              </div>
+              <button
+                @click="deleteTask(task.id)"
+                aria-label="Delete task"
+                class="ml-4 text-gray-500 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all flex-shrink-0 focus:outline-none focus:ring-1 focus:ring-red-500 rounded-sm"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="h-6 w-6"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </li>
+            <li
+              v-if="tasks.length === 0"
+              class="text-center p-8"
+              :style="{ 'color': 'hsl(var(--foreground) / 0.7)' }"
+            >
+              <p>The stage is empty. Add a task to begin.</p>
+            </li>
+          </transition-group>
+        </div>
+
+        <footer
+          v-if="tasks.length > 0"
+          class="p-4 flex justify-between items-center text-sm border-t"
+          :style="{ 'color': 'hsl(var(--foreground) / 0.7)', 'border-color': 'hsl(var(--border))' }"
+        >
+          <span>{{ remaining }} items left</span>
+          <div class="flex space-x-1">
+            <button
+              @click="visibility = 'all'"
+              :class="{ 'active-filter': visibility === 'all' }"
+              class="px-3 py-1 border border-transparent rounded-md hover:border-gray-300 dark:hover:border-gray-600"
+            >
+              All
+            </button>
+            <button
+              @click="visibility = 'active'"
+              :class="{ 'active-filter': visibility === 'active' }"
+              class="px-3 py-1 border border-transparent rounded-md hover:border-gray-300 dark:hover:border-gray-600"
+            >
+              Active
+            </button>
+            <button
+              @click="visibility = 'completed'"
+              :class="{ 'active-filter': visibility === 'completed' }"
+              class="px-3 py-1 border border-transparent rounded-md hover:border-gray-300 dark:hover:border-gray-600"
+            >
+              Completed
+            </button>
+          </div>
+          <button
+            @click="clearCompleted"
+            v-show="completedCount > 0"
+            class="hover:underline"
+          >
+            Clear Completed
+          </button>
+        </footer>
+      </main>
+    </div>
+
+    <footer
+      role="contentinfo"
+      class="w-full max-w-xl mx-auto mt-8 text-center text-xs"
+      :style="{ 'color': 'hsl(var(--foreground) / 0.5)' }"
+    >
+      <p class="mb-4">
+        Double-click to edit a todo. Created by Jozef Javorsky.
+      </p>
+      <nav role="navigation" aria-label="Author Links">
+        <ul class="flex justify-center space-x-4">
+          <li>
+            <a
+              href="https://github.com/jozef-javorsky-dodo"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Jozef Javorsky's GitHub Profile (opens in new tab)"
+              class="hover:underline"
+              >GitHub<span class="visually-hidden">(opens in new tab)</span></a
+            >
+          </li>
+          <li>
+            <a
+              href="https://g.dev/jozef-javorsky-dodo"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Jozef Javorsky's Google Developer Profile (opens in new tab)"
+              class="hover:underline"
+              >Google Dev<span class="visually-hidden"
+                >(opens in new tab)</span
+              ></a
+            >
+          </li>
+          <li>
+            <a
+              href="mailto:jozef.javorsky.dodo@gmail.com"
+              aria-label="Email Jozef Javorsky"
+              class="hover:underline"
+              >Email</a
+            >
+          </li>
+        </ul>
+      </nav>
+    </footer>
+
+    <script
+      src="https://unpkg.com/vue@3/dist/vue.global.prod.js"
+      integrity="sha256-M/DKk6zwo/AMKpSiFzY30DIflmMtEdFVNQBebgp14Fg="
+      crossorigin="anonymous"
+    ></script>
+    <script>
+      const { createApp, nextTick } = Vue;
+      const focusDirective = {
+        mounted(el) {
+          el.focus();
+        },
+      };
+
+      createApp({
+        data() {
+          return {
+            tasks: [],
+            newTask: "",
+            visibility: "all",
+            editingTask: null,
+            beforeEditCache: "",
+            liveRegionMessage: "",
+            theme: "dark",
+            lastId: 0,
+          };
+        },
+        directives: { focus: focusDirective },
+        computed: {
+          filteredTasks() {
+            if (this.visibility === "active")
+              return this.tasks.filter((t) => !t.completed);
+            if (this.visibility === "completed")
+              return this.tasks.filter((t) => t.completed);
+            return this.tasks;
+          },
+          remaining() {
+            return this.tasks.filter((t) => !t.completed).length;
+          },
+          completedCount() {
+            return this.tasks.filter((t) => t.completed).length;
+          },
+          inputPlaceholder() {
+            return this.tasks.length === 0
+              ? "What needs to be done?"
+              : "Add another task...";
+          },
+        },
+        watch: {
+          tasks: {
+            handler() {
+              this.saveState();
+            },
+            deep: true,
+          },
+          visibility() {
+            this.saveState();
+          },
+          theme(newTheme) {
+            if (newTheme) {
+              document.documentElement.classList.toggle(
+                "light",
+                newTheme === "light"
+              );
+              document.documentElement.classList.toggle(
+                "dark",
+                newTheme === "dark"
+              );
+              this.saveState();
+            }
+          },
+        },
+        methods: {
+          addTask() {
+            if (!this.newTask) return;
+            this.lastId++;
+            this.tasks.unshift({
+              id: this.lastId,
+              text: this.newTask,
+              completed: false,
+            });
+            this.liveRegionMessage = `Task added: ${this.newTask}`;
+            this.newTask = "";
+          },
+          deleteTask(id) {
+            const task = this.tasks.find((t) => t.id === id);
+            if (task) {
+              this.tasks = this.tasks.filter((t) => t.id !== id);
+              this.liveRegionMessage = `Task deleted: ${task.text}`;
+            }
+          },
+          editTask(task) {
+            this.beforeEditCache = task.text;
+            this.editingTask = task;
+            nextTick(() => {
+              this.$el
+                .querySelector('input[aria-label^="Editing task"]')
+                .focus();
+            });
+          },
+          doneEdit(task) {
+            if (!this.editingTask) return;
+            this.editingTask = null;
+            task.text = task.text.trim();
+            if (!task.text) this.deleteTask(task.id);
+            else this.liveRegionMessage = `Task updated to: ${task.text}`;
+          },
+          cancelEdit(task) {
+            this.editingTask = null;
+            task.text = this.beforeEditCache;
+          },
+          clearCompleted() {
+            const completed = this.completedCount;
+            if (completed > 0) {
+              this.tasks = this.tasks.filter((t) => !t.completed);
+              this.liveRegionMessage = `${completed} completed tasks cleared.`;
+            }
+          },
+          toggleTheme() {
+            this.theme = this.theme === "light" ? "dark" : "light";
+          },
+          saveState() {
+            try {
+              const state = {
+                tasks: this.tasks,
+                visibility: this.visibility,
+                theme: this.theme,
+              };
+              localStorage.setItem("todo-vue-state", JSON.stringify(state));
+            } catch (e) {
+              console.error("Failed to save state to localStorage.", e);
+            }
+          },
+          loadState() {
+            try {
+              const state = JSON.parse(localStorage.getItem("todo-vue-state"));
+              const prefersLight =
+                window.matchMedia &&
+                window.matchMedia("(prefers-color-scheme: light)").matches;
+              if (state) {
+                this.tasks = state.tasks || [];
+                this.visibility = state.visibility || "all";
+                this.theme = state.theme || (prefersLight ? "light" : "dark");
+                this.lastId = this.tasks.reduce(
+                  (maxId, task) => Math.max(task.id, maxId),
+                  0
+                );
+              } else {
+                this.theme = prefersLight ? "light" : "dark";
+              }
+            } catch (e) {
+              console.error("Failed to load state from localStorage.", e);
+              this.theme = "dark";
+            }
+          },
+        },
+        mounted() {
+          this.loadState();
+          this.$refs.newTaskInput.focus();
+          window
+            .matchMedia("(prefers-color-scheme: light)")
+            .addEventListener("change", (e) => {
+              if (!localStorage.getItem("todo-vue-state")) {
+                this.theme = e.matches ? "light" : "dark";
+              }
+            });
+        },
+      }).mount("#app");
+    </script>
+  </body>
+</html>
